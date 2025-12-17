@@ -15,32 +15,23 @@ async function fetchJson(params) {
   return response.json();
 }
 
-async function fetchCategoryMembers(title) {
-  let members = [];
-  let continueKey = '';
-
-  do {
-    const query = new URLSearchParams({
-      action: 'query',
-      list: 'categorymembers',
-      cmtitle: title,
-      cmlimit: '50',
-      cmcontinue: continueKey,
-    });
-
-    const data = await fetchJson(query.toString());
-    members = members.concat(data?.query?.categorymembers || []);
-    continueKey = data?.continue?.cmcontinue ?? '';
-  } while (continueKey);
-
-  return members;
-}
-
 function normalizeUrl(url) {
   if (!url) return PLACEHOLDER_IMG;
   if (url.startsWith('http')) return url;
   if (url.startsWith('//')) return `https:${url}`;
   return `https://starcitizen.tools${url}`;
+}
+
+function extractCostFromCells(cells) {
+  for (const cell of cells) {
+    const rawText = cell.textContent.replace(/\[\d+\]/g, '').trim();
+    if (!rawText) continue;
+    const match = rawText.match(/([\d.,]+\s*(?:a?UEC|UEC|SCU))/i);
+    if (match) {
+      return match[1].trim();
+    }
+  }
+  return 'N/A';
 }
 
 function extractPrice(doc) {
@@ -83,10 +74,10 @@ function extractIngredients(doc) {
   return ingredients;
 }
 
-async function fetchItemDetail(member) {
+async function fetchItemDetail(baseItem) {
   const query = new URLSearchParams({
     action: 'parse',
-    pageid: member.pageid,
+    page: baseItem.title,
     prop: 'text|displaytitle',
   });
 
@@ -99,27 +90,65 @@ async function fetchItemDetail(member) {
   const ingredients = extractIngredients(doc);
 
   return {
-    id: member.pageid,
-    title: data?.parse?.displaytitle || member.title,
-    image: normalizeUrl(firstImage?.getAttribute('src')),
-    cost,
+    id: data?.parse?.pageid || baseItem.id,
+    title: data?.parse?.displaytitle || baseItem.title,
+    image: normalizeUrl(firstImage?.getAttribute('src') || baseItem.image),
+    cost: cost === 'N/A' ? baseItem.cost || 'N/A' : cost,
     ingredients,
-    url: `https://starcitizen.tools/${encodeURIComponent(member.title.replace(/\s/g, '_'))}`,
+    url: `https://starcitizen.tools/${encodeURIComponent((baseItem.title || '').replace(/\s/g, '_'))}`,
   };
 }
 
+async function fetchWikeloLandingItems() {
+  const query = new URLSearchParams({
+    action: 'parse',
+    page: 'Wikelo',
+    prop: 'text',
+  });
+
+  const data = await fetchJson(query.toString());
+  const html = data?.parse?.text?.['*'] || '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const items = new Map();
+
+  doc.querySelectorAll('.mw-parser-output table').forEach((table) => {
+    table.querySelectorAll('tr').forEach((row, rowIndex) => {
+      if (rowIndex === 0 && row.querySelectorAll('th').length) return;
+      const cells = Array.from(row.querySelectorAll('td'));
+      if (!cells.length) return;
+
+      const link = row.querySelector('a[title]');
+      const title = link?.getAttribute('title') || link?.textContent?.trim();
+      if (!title) return;
+
+      const cost = extractCostFromCells(cells);
+      const image = normalizeUrl(row.querySelector('img')?.getAttribute('src'));
+
+      items.set(title, {
+        id: title,
+        title,
+        cost,
+        image,
+        url: `https://starcitizen.tools/${encodeURIComponent(title.replace(/\s/g, '_'))}`,
+      });
+    });
+  });
+
+  return Array.from(items.values());
+}
+
 export async function fetchWikeloItems() {
-  const members = await fetchCategoryMembers('Category:Wikelo');
-  const detailPromises = members.map((member) =>
-    fetchItemDetail(member).catch((error) => {
-      console.error('Failed to build item', member.title, error);
+  const baseItems = await fetchWikeloLandingItems();
+  const detailPromises = baseItems.map((item) =>
+    fetchItemDetail(item).catch((error) => {
+      console.error('Failed to build item', item.title, error);
       return {
-        id: member.pageid,
-        title: member.title,
-        image: PLACEHOLDER_IMG,
-        cost: 'Unavailable',
+        id: item.id,
+        title: item.title,
+        image: item.image || PLACEHOLDER_IMG,
+        cost: item.cost || 'Unavailable',
         ingredients: [],
-        url: `https://starcitizen.tools/${encodeURIComponent(member.title.replace(/\s/g, '_'))}`,
+        url: item.url,
       };
     })
   );
