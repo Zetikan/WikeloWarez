@@ -1,7 +1,7 @@
 const API_BASE = 'https://starcitizen.tools/api.php';
 
 const PLACEHOLDER_IMG =
-  'https://images.unsplash.com/photo-1523961131990-5ea7c61b2107?auto=format&fit=crop&w=800&q=60';
+  'https://media.starcitizen.tools/8/83/Wikelo_Hologram_-_Alpha_4.1.0.jpg?auto=format&fit=crop&w=800&q=60';
 
 function buildUrl(params) {
   return `${API_BASE}?origin=*&format=json&${params}`;
