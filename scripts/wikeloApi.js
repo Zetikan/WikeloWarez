@@ -34,6 +34,46 @@ function extractCostFromCells(cells) {
   return 'N/A';
 }
 
+function extractRequirements(cell) {
+  if (!cell) return [];
+
+  const entries = [];
+  const liNodes = cell.querySelectorAll('li');
+
+  const addEntry = (text) => {
+    const clean = text.replace(/\[\d+\]/g, '').trim();
+    if (!clean) return;
+    const qtyName = clean.match(/^([\d.,]+)\s*[×x]?\s*(.+)$/i);
+    const nameQty = clean.match(/^(.+?)\s*[×x]?\s*(\d+)$/);
+
+    if (qtyName) {
+      const quantity = Number(qtyName[1]);
+      entries.push({ name: qtyName[2].trim(), quantity: Number.isFinite(quantity) ? quantity : 1 });
+      return;
+    }
+
+    if (nameQty) {
+      const quantity = Number(nameQty[2]);
+      entries.push({ name: nameQty[1].trim(), quantity: Number.isFinite(quantity) ? quantity : 1 });
+      return;
+    }
+
+    entries.push({ name: clean, quantity: 1 });
+  };
+
+  if (liNodes.length) {
+    liNodes.forEach((li) => addEntry(li.textContent));
+  } else {
+    cell.innerHTML
+      .split(/<br\s*\/?>/i)
+      .map((chunk) => chunk.replace(/<[^>]+>/g, '').trim())
+      .filter(Boolean)
+      .forEach(addEntry);
+  }
+
+  return entries;
+}
+
 function extractPrice(doc) {
   const rows = Array.from(doc.querySelectorAll('table.infobox tr, table tr'));
   for (const row of rows) {
@@ -88,13 +128,14 @@ async function fetchItemDetail(baseItem) {
   const firstImage = doc.querySelector('.infobox img, figure img, img');
   const cost = extractPrice(doc);
   const ingredients = extractIngredients(doc);
+  const mergedIngredients = ingredients.length ? ingredients : baseItem.ingredients || [];
 
   return {
     id: data?.parse?.pageid || baseItem.id,
     title: data?.parse?.displaytitle || baseItem.title,
     image: normalizeUrl(firstImage?.getAttribute('src') || baseItem.image),
     cost: cost === 'N/A' ? baseItem.cost || 'N/A' : cost,
-    ingredients,
+    ingredients: mergedIngredients,
     url: `https://starcitizen.tools/${encodeURIComponent((baseItem.title || '').replace(/\s/g, '_'))}`,
   };
 }
@@ -112,23 +153,40 @@ async function fetchWikeloLandingItems() {
   const items = new Map();
 
   doc.querySelectorAll('.mw-parser-output table').forEach((table) => {
+    const headerCells = Array.from(table.querySelectorAll('tr:first-child th')).map((th) =>
+      th.textContent.trim().toLowerCase()
+    );
+
     table.querySelectorAll('tr').forEach((row, rowIndex) => {
-      if (rowIndex === 0 && row.querySelectorAll('th').length) return;
+      if (rowIndex === 0 && headerCells.length) return;
       const cells = Array.from(row.querySelectorAll('td'));
       if (!cells.length) return;
 
-      const link = row.querySelector('a[title]');
+      const getCellByHeader = (name) => {
+        const idx = headerCells.findIndex((h) => h.includes(name));
+        return idx >= 0 ? cells[idx] : null;
+      };
+
+      const rewardCell = getCellByHeader('reward') || cells[0];
+      const requirementsCell = getCellByHeader('needed') || getCellByHeader('ingredients');
+
+      const link = rewardCell?.querySelector('a[title]') || row.querySelector('a[title]');
       const title = link?.getAttribute('title') || link?.textContent?.trim();
       if (!title) return;
 
-      const cost = extractCostFromCells(cells);
-      const image = normalizeUrl(row.querySelector('img')?.getAttribute('src'));
+      const requirements = extractRequirements(requirementsCell);
+      const costFromDeps = requirementsCell
+        ?.textContent.replace(/\[\d+\]/g, '')
+        .match(/([\d.,]+\s*(?:a?UEC|UEC|SCU))/i)?.[1];
+      const cost = costFromDeps || extractCostFromCells(cells);
+      const image = normalizeUrl((rewardCell || row).querySelector('img')?.getAttribute('src'));
 
       items.set(title, {
         id: title,
         title,
         cost,
         image,
+        ingredients: requirements,
         url: `https://starcitizen.tools/${encodeURIComponent(title.replace(/\s/g, '_'))}`,
       });
     });
