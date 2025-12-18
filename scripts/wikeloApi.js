@@ -3,16 +3,37 @@ const API_BASE = 'https://starcitizen.tools/api.php';
 const PLACEHOLDER_IMG =
   'https://media.starcitizen.tools/8/83/Wikelo_Hologram_-_Alpha_4.1.0.jpg?auto=format&fit=crop&w=800&q=60';
 
-function buildUrl(params) {
-  return `${API_BASE}?origin=*&format=json&${params}`;
+function stripHtml(text) {
+  if (!text) return '';
+  const doc = new DOMParser().parseFromString(text, 'text/html');
+  return (doc.body.textContent || '').trim();
+}
+
+function buildUrl(params, withOrigin = true) {
+  const prefix = `${API_BASE}?format=json&formatversion=2&${params}`;
+  return withOrigin ? `${prefix}&origin=*` : prefix;
 }
 
 async function fetchJson(params) {
-  const response = await fetch(buildUrl(params));
-  if (!response.ok) {
-    throw new Error(`Wiki request failed: ${response.status}`);
+  const attempt = async (withOrigin) => {
+    const response = await fetch(buildUrl(params, withOrigin), {
+      mode: 'cors',
+      credentials: 'omit',
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      throw new Error(`Wiki request failed (${withOrigin ? 'origin=*' : 'no origin'}): ${response.status}`);
+    }
+    return response.json();
+  };
+
+  try {
+    return await attempt(true);
+  } catch (error) {
+    console.warn('Primary wiki fetch failed, retrying without origin=*', error);
+    return attempt(false);
   }
-  return response.json();
 }
 
 function normalizeUrl(url) {
