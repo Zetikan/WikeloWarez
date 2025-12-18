@@ -10,7 +10,7 @@ function stripHtml(text) {
 }
 
 function buildUrl(params, withOrigin = true) {
-  const prefix = `${API_BASE}?format=json&formatversion=2&${params}`;
+  const prefix = `${API_BASE}?format=json&${params}`;
   return withOrigin ? `${prefix}&origin=*` : prefix;
 }
 
@@ -152,7 +152,8 @@ async function fetchItemDetail(baseItem) {
   });
 
   const data = await fetchJson(query.toString());
-  const html = data?.parse?.text?.['*'] || '';
+  const parsedText = data?.parse?.text;
+  const html = typeof parsedText === 'string' ? parsedText : parsedText?.['*'] || '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
 
   const firstImage = doc.querySelector('.infobox img, figure img, img');
@@ -179,7 +180,8 @@ async function fetchWikeloLandingItems() {
   });
 
   const data = await fetchJson(query.toString());
-  const html = data?.parse?.text?.['*'] || '';
+  const parsedText = data?.parse?.text;
+  const html = typeof parsedText === 'string' ? parsedText : parsedText?.['*'] || '';
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = new Map();
 
