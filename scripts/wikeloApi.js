@@ -41,7 +41,7 @@ function extractRequirements(cell) {
   const liNodes = cell.querySelectorAll('li');
 
   const addEntry = (text) => {
-    const clean = text.replace(/\[\d+\]/g, '').trim();
+    const clean = stripHtml(text).replace(/\[\d+\]/g, '').trim();
     if (!clean) return;
     const qtyName = clean.match(/^([\d.,]+)\s*[×x]?\s*(.+)$/i);
     const nameQty = clean.match(/^(.+?)\s*[×x]?\s*(\d+)$/);
@@ -177,18 +177,22 @@ async function fetchWikeloLandingItems() {
         return idx >= 0 ? cells[idx] : null;
       };
 
-      const rewardCell = getCellByHeader('reward') || cells[0];
-      const requirementsCell =
-        getCellByHeader('need') || getCellByHeader('ingredient') || getCellByHeader('depend') || cells[1];
+      const rewardIdx = headerCells.findIndex((h) => h.includes('reward'));
+      const rewardCell = (rewardIdx >= 0 ? cells[rewardIdx] : null) || cells[0];
+      const requirementCells = cells.filter((_, idx) => idx !== rewardIdx);
 
       const link = rewardCell?.querySelector('a[title]') || row.querySelector('a[title]');
       const title = stripHtml(link?.getAttribute('title') || link?.textContent?.trim());
       if (!title) return;
 
-      const requirements = extractRequirements(requirementsCell);
-      const costFromDeps = requirementsCell
-        ?.textContent.replace(/\[\d+\]/g, '')
-        .match(/([\d.,]+\s*(?:a?UEC|UEC|SCU))/i)?.[1];
+      const requirements = requirementCells.flatMap((cell) => extractRequirements(cell)).filter(Boolean);
+      const costFromDeps = requirementCells
+        .map((cell) =>
+          cell?.textContent
+            .replace(/\[\d+\]/g, '')
+            .match(/([\d.,]+\s*(?:a?UEC|UEC|SCU))/i)?.[1]
+        )
+        .find(Boolean);
       const cost = costFromDeps || extractCostFromCells(cells);
       const image = normalizeUrl((rewardCell || row).querySelector('img')?.getAttribute('src'));
 
