@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ingredient Calculator - Wikelo Warez</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="page">
+  <header class="hero">
+    <div class="hero__nav">
+      <div class="logo">Wikelo Warez</div>
+      <nav class="nav">
+        <a class="nav__link" href="./index.html">Catalog</a>
+        <a class="nav__link nav__link--active" href="./calculator.html">Ingredient Calculator</a>
+      </nav>
+    </div>
+    <div class="hero__content">
+      <p class="eyebrow">Crafting companion</p>
+      <h1>Track ingredients and instantly see what you can build.</h1>
+      <p class="lede">Add every ingredient you own, adjust quantities, and watch eligible Wikelo items appear under your inventory. Star your favorites to keep them pinned to the top.</p>
+    </div>
+  </header>
+
+  <main class="section">
+    <div class="calculator">
+      <div class="section__header">
+        <div>
+          <p class="eyebrow">Inventory</p>
+          <h2>Ingredient counters</h2>
+          <p class="lede">Add each ingredient you track, then use the buttons to increase or decrease your counts.</p>
+        </div>
+        <div class="pill" id="calc-status">Loading Wikelo items…</div>
+      </div>
+
+      <div class="panel stack">
+        <label class="label" for="new-ingredient">Add an ingredient</label>
+        <div class="counter-row" style="border-bottom: none; padding: 0; grid-template-columns: 1fr auto;">
+          <input id="new-ingredient" class="input" type="text" placeholder="e.g. Iron Ore" />
+          <button id="add-ingredient" class="button" type="button">Add</button>
+        </div>
+        <div id="ingredient-list" class="stack"></div>
+      </div>
+
+      <div class="section__header" style="margin-top: 32px;">
+        <div>
+          <p class="eyebrow">Crafting</p>
+          <h2>Items you can make</h2>
+          <p class="lede">As soon as your inventory matches an item's requirements, it shows up here. Star items to keep them pinned.</p>
+        </div>
+      </div>
+
+      <div id="craftable-list" class="craftable-grid"></div>
+    </div>
+  </main>
+
+  <template id="counter-template">
+    <div class="counter-row">
+      <div>
+        <div class="label">Ingredient</div>
+        <div class="card__title"></div>
+      </div>
+      <div>
+        <div class="label">You have</div>
+        <div class="card__title count">0</div>
+      </div>
+      <div>
+        <div class="label">Adjust</div>
+        <div class="counter-controls">
+          <button class="counter-button" data-step="-5">-5</button>
+          <button class="counter-button" data-step="-1">-1</button>
+          <button class="counter-button" data-step="1">+1</button>
+          <button class="counter-button" data-step="5">+5</button>
+        </div>
+      </div>
+      <button class="counter-button" data-remove="true">Remove</button>
+    </div>
+  </template>
+
+  <template id="craft-card-template">
+    <article class="craft-card">
+      <button class="star-toggle" aria-label="Star item">☆</button>
+      <h3 class="craft-card__title"></h3>
+      <p class="craft-card__ingredients"></p>
+      <p class="small"></p>
+    </article>
+  </template>
+
+  <script type="module" src="scripts/calculator.js"></script>
+</body>
+</html>
