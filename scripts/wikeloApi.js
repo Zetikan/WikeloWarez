@@ -64,11 +64,20 @@ function extractRequirements(cell) {
   if (liNodes.length) {
     liNodes.forEach((li) => addEntry(li.textContent));
   } else {
-    cell.innerHTML
+    const htmlSplits = cell.innerHTML
       .split(/<br\s*\/?>/i)
       .map((chunk) => chunk.replace(/<[^>]+>/g, '').trim())
-      .filter(Boolean)
-      .forEach(addEntry);
+      .filter(Boolean);
+
+    if (htmlSplits.length) {
+      htmlSplits.forEach(addEntry);
+    } else {
+      cell.textContent
+        .split(/[\n•;,]/)
+        .map((chunk) => chunk.trim())
+        .filter(Boolean)
+        .forEach(addEntry);
+    }
   }
 
   return entries;
@@ -129,10 +138,11 @@ async function fetchItemDetail(baseItem) {
   const cost = extractPrice(doc);
   const ingredients = extractIngredients(doc);
   const mergedIngredients = ingredients.length ? ingredients : baseItem.ingredients || [];
+  const rawTitle = data?.parse?.displaytitle || baseItem.title;
 
   return {
     id: data?.parse?.pageid || baseItem.id,
-    title: data?.parse?.displaytitle || baseItem.title,
+    title: stripHtml(rawTitle),
     image: normalizeUrl(firstImage?.getAttribute('src') || baseItem.image),
     cost: cost === 'N/A' ? baseItem.cost || 'N/A' : cost,
     ingredients: mergedIngredients,
@@ -168,10 +178,11 @@ async function fetchWikeloLandingItems() {
       };
 
       const rewardCell = getCellByHeader('reward') || cells[0];
-      const requirementsCell = getCellByHeader('needed') || getCellByHeader('ingredients');
+      const requirementsCell =
+        getCellByHeader('need') || getCellByHeader('ingredient') || getCellByHeader('depend') || cells[1];
 
       const link = rewardCell?.querySelector('a[title]') || row.querySelector('a[title]');
-      const title = link?.getAttribute('title') || link?.textContent?.trim();
+      const title = stripHtml(link?.getAttribute('title') || link?.textContent?.trim());
       if (!title) return;
 
       const requirements = extractRequirements(requirementsCell);
