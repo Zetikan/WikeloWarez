@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wikelo Catalog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body class="page">
+  <header class="hero">
+    <div class="hero__nav">
+      <div class="logo">Wikelo Warez</div>
+      <nav class="nav">
+        <a class="nav__link nav__link--active" href="./index.html">Catalog</a>
+        <a class="nav__link" href="./calculator.html">Ingredient Calculator</a>
+      </nav>
+    </div>
+    <div class="hero__content">
+      <p class="eyebrow">Inspired by wikelotrades.com</p>
+      <h1>All Wikelo items, live from the Star Citizen wiki.</h1>
+      <p class="lede">Browse the entire Wikelo lineup automatically pulled from starcitizen.tools. Prices and preview images update directly from the API so you never miss a change.</p>
+      <div class="hero__actions">
+        <a class="button" href="#catalog">View the catalog</a>
+        <a class="button button--ghost" href="./calculator.html">Go to ingredient calculator</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="catalog" class="section">
+    <div class="section__header">
+      <div>
+        <p class="eyebrow">Live data</p>
+        <h2>Wikelo inventory</h2>
+        <p class="lede">Every item returned by the Star Citizen wiki Wikelo category is shown below with its current cost.</p>
+      </div>
+      <div class="pill" id="status-pill">Connecting to the wiki…</div>
+    </div>
+
+    <div id="item-grid" class="grid"></div>
+  </main>
+
+  <template id="item-card-template">
+    <article class="card">
+      <div class="card__image-wrapper">
+        <img class="card__image" alt="" loading="lazy" />
+        <div class="card__badge"></div>
+      </div>
+      <div class="card__body">
+        <div class="card__title-row">
+          <h3 class="card__title"></h3>
+          <span class="card__note"></span>
+        </div>
+        <p class="card__description">Pulled directly from starcitizen.tools</p>
+      </div>
+    </article>
+  </template>
+
+  <script type="module" src="scripts/home.js"></script>
+</body>
+</html>
