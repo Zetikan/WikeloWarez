@@ -1,4 +1,4 @@
-import { fetchWikeloItems } from './wikeloApi.js';
+import { fetchWikeloItems } from './SingleApiParser.js';
 
 const ingredientList = document.getElementById('ingredient-list');
 const addButton = document.getElementById('add-ingredient');

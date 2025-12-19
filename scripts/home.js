@@ -1,4 +1,4 @@
-import { fetchWikeloItems } from './wikeloApi.js';
+import { fetchWikeloItems } from './SingleApiParser.js';
 
 const grid = document.getElementById('item-grid');
 const template = document.getElementById('item-card-template');
